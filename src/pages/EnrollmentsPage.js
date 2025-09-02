@@ -1,16 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField } from '@mui/material';
+import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, CircularProgress } from '@mui/material';
 
 function EnrollmentsPage() {
   const [enrollments, setEnrollments] = useState([]);
   const [studentId, setStudentId] = useState('');
   const [code, setCode] = useState('');
+  const [searchStudentId, setSearchStudentId] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
     axios.get('http://localhost:8080/api/enrollments')
-      .then(response => setEnrollments(response.data))
-      .catch(error => console.error('Error fetching enrollments', error));
+      .then(response => {
+        setEnrollments(response.data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching enrollments', error);
+        setLoading(false);
+      });
   }, []);
 
   const handleEnrollStudent = () => {
@@ -18,17 +27,46 @@ function EnrollmentsPage() {
       alert('Please provide student ID and course code');
       return;
     }
+    setLoading(true);
     axios.post(`http://localhost:8080/api/student/Enrollment?studentId=${studentId}&code=${code}`)
       .then(response => {
         setEnrollments([...enrollments, response.data]);
         setStudentId('');
         setCode('');
+        setLoading(false);
       })
-      .catch(error => console.error('Error enrolling student', error));
+      .catch(error => {
+        console.error('Error enrolling student', error);
+        setLoading(false);
+      });
+  };
+
+  const handleSearchByStudentId = () => {
+    setLoading(true);
+    if (searchStudentId) {
+      axios.get(`http://localhost:8080/api/enrollments/student?studentId=${searchStudentId}`)
+        .then(response => {
+          setEnrollments(response.data);
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error('Error fetching filtered enrollments', error);
+          setLoading(false);
+        });
+    } 
   };
 
   return (
     <div>
+      <h3>Search Enrollments by Student ID</h3>
+      <TextField
+        label="Search Student ID"
+        value={searchStudentId}
+        onChange={(e) => setSearchStudentId(e.target.value)}
+      />
+      <Button variant="contained" onClick={handleSearchByStudentId}>Search</Button>
+
+      {loading && <CircularProgress />}
 
       <h3>Enroll Student</h3>
       <TextField
